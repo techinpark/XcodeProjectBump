@@ -32,6 +32,7 @@ $ XcodeProjectBump [flags]
 - --minor: To bump the minor version (e.g., 1.0.0 to 1.1.0).
 - --hotfix: To bump the hotfix version (e.g., 1.0.0 to 1.0.1).
 - --build: To bump the build number (e.g., 10 to 11).
+
  Note: If multiple flags are provided, the tool will prioritize major > minor > hotfix.
 
 Example:
