@@ -5,6 +5,9 @@ import PackageDescription
 
 let package = Package(
     name: "XcodeProjectBump",
+    products: [
+        .executable(name: "XcodeProjectBump", targets: ["XcodeProjectBump"])
+    ],
     dependencies: [
         .package(url: "https://github.com/tuist/xcodeproj.git",
                  .upToNextMajor(from: "8.13.0")),
