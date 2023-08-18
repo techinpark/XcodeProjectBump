@@ -18,9 +18,21 @@ Updating the version of an application can be repetitive. XcodeProjectBump is he
 
 ## 📖 Usage
 
+### Install 
+
+- Using [Mint](https://github.com/yonaskolb/Mint)
+```sh 
+$ brew install mint 
+```
+
+```sh
+$ mint install techinpark/XcodeProjectBump
+```
+
 To use XcodeProjectBump, navigate to your Xcode project's root directory in the terminal and type:
 
 ![](.github/images/screenshot.png)
+
 
 ```bash
 $ XcodeProjectBump [flags]
