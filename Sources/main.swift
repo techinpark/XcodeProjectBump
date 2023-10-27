@@ -119,13 +119,13 @@ struct VersionUpdater: ParsableCommand {
     
     func updateVersion(inFile filename: String, major: Bool, minor: Bool, hotfix: Bool, build: Bool) {
         guard let plistData = FileManager.default.contents(atPath: filename) else {
-            print("Failed to read the plist file.")
+            print("Failed to read the plist file at \(filename).")
             return
         }
         
         var format = PropertyListSerialization.PropertyListFormat.xml
         guard var plist = try? PropertyListSerialization.propertyList(from: plistData, options: .mutableContainersAndLeaves, format: &format) as? [String: Any] else {
-            print("Failed to read the plist data.")
+            print("Failed to read the plist data at \(filename).")
             return
         }
         
@@ -179,6 +179,7 @@ struct VersionUpdater: ParsableCommand {
             )
         }
     }
+
 }
 
 VersionUpdater.main()
