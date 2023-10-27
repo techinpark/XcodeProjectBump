@@ -112,9 +112,15 @@ struct VersionUpdater: ParsableCommand {
         }
     }
     
-    func printUpdateMessage(previousVersion: String, previousBuild: String, updatedVersion: String, updatedBuild: String) {
-        let versionOutput = "[+] updated version : \u{001B}[31m\(previousVersion)(\(previousBuild))\u{001B}[0m ➡️  \u{001B}[32m\(updatedVersion)(\(updatedBuild))\u{001B}[0m"
-        print(versionOutput)
+    func printUpdateMessage(previousVersion: String, previousBuild: String, updatedVersion: String, updatedBuild: String?) {
+        
+        if let updatedBuild {
+            let versionOutput = "[+] updated version : \u{001B}[31m\(previousVersion)(\(previousBuild))\u{001B}[0m ➡️  \u{001B}[32m\(updatedVersion)(\(updatedBuild))\u{001B}[0m"
+            print(versionOutput)
+        } else {
+            let versionOutput = "[+] updated version : \u{001B}[31m\(previousVersion)\u{001B}[0m ➡️  \u{001B}[32m\(updatedVersion)\u{001B}[0m"
+            print(versionOutput)
+        }
     }
     
     func updateVersion(inFile filename: String, major: Bool, minor: Bool, hotfix: Bool, build: Bool) {
@@ -168,8 +174,7 @@ struct VersionUpdater: ParsableCommand {
         
         if let prevVersion = previousVersion,
            let prevBuild = previousBuild,
-           let updatedVersion = updatedVersion,
-           let updatedBuild = updatedBuild {
+           let updatedVersion = updatedVersion {
             
             printUpdateMessage(
                 previousVersion: prevVersion,
