@@ -29,20 +29,19 @@ struct VersionUpdater: ParsableCommand {
     var path: String?
     
     func run() throws {
-        let finalPath = try path ?? findDefaultPlistPath()
-        
-        if !FileManager.default.fileExists(atPath: finalPath) {
-            print("\u{001B}[31m No Info.plist file found at specified path.\u{001B}[0m")
-            throw ExitCode.failure
+        if let specificPath = path {
+            if !FileManager.default.fileExists(atPath: specificPath) {
+                print("\u{001B}[31m No Info.plist file found at specified path.\u{001B}[0m")
+                throw ExitCode.failure
+            }
+            updateVersion(inFile: specificPath, major: major, minor: minor, hotfix: hotfix, build: build)
+        } else {
+            let allPlistPaths = try findAllPlistPaths()
+            let selectedPaths = promptUserToSelectPlist(plistPaths: allPlistPaths)
+            for plistPath in selectedPaths {
+                updateVersion(inFile: plistPath, major: major, minor: minor, hotfix: hotfix, build: build)
+            }
         }
-        
-        updateVersion(
-            inFile: finalPath,
-            major: major,
-            minor: minor,
-            hotfix: hotfix,
-            build: build
-        )
     }
     
     
@@ -60,6 +59,38 @@ struct VersionUpdater: ParsableCommand {
         }
         
         throw NSError(domain: "XcodeProjectBump", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to locate Info.plist in the current directory."])
+    }
+    
+    private func findAllPlistPaths() throws -> [String] {
+        guard let projectPath = try? FileManager.default.contentsOfDirectory(atPath: FileManager.default.currentDirectoryPath).first(where: { $0.hasSuffix(".xcodeproj") }) else {
+            throw NSError(domain: "XcodeProjectBump", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to locate an Xcode project in the current directory."])
+        }
+        
+        let xcodeProject = try XcodeProj(pathString: projectPath)
+        var plistPaths: [String] = []
+        
+        for conf in xcodeProject.pbxproj.buildConfigurations {
+            if let plistPath = conf.buildSettings[Keys.infoPlistFile] as? String {
+                print("🎉 \u{001B}[32m\(plistPath)\u{001B}[0m found")
+                plistPaths.append(plistPath)
+            }
+        }
+        return plistPaths
+    }
+    
+    // 2. 사용자에게 선택 가능한 목록 표시
+    private func promptUserToSelectPlist(plistPaths: [String]) -> [String] {
+        print("Multiple Info.plist files found:")
+        for (index, path) in plistPaths.enumerated() {
+            print("[\(index + 1)] \(path)")
+        }
+        print("Enter the numbers of the Info.plist files you want to update (comma separated):")
+        guard let input = readLine() else { return [] }
+        let selectedIndices = input.split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+        return selectedIndices.compactMap { index in
+            guard index > 0 && index <= plistPaths.count else { return nil }
+            return plistPaths[index - 1]
+        }
     }
     
     func printUpdateMessage(previousVersion: String, previousBuild: String, updatedVersion: String, updatedBuild: String) {
