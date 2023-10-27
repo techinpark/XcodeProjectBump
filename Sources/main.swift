@@ -29,36 +29,55 @@ struct VersionUpdater: ParsableCommand {
     var path: String?
     
     func run() throws {
-        if let specificPath = path {
-            if !FileManager.default.fileExists(atPath: specificPath) {
-                print("\u{001B}[31m No Info.plist file found at specified path.\u{001B}[0m")
-                throw ExitCode.failure
-            }
-            updateVersion(inFile: specificPath, major: major, minor: minor, hotfix: hotfix, build: build)
-        } else {
-            let allPlistPaths = try findAllPlistPaths()
-            let selectedPaths = promptUserToSelectPlist(plistPaths: allPlistPaths)
-            for plistPath in selectedPaths {
-                updateVersion(inFile: plistPath, major: major, minor: minor, hotfix: hotfix, build: build)
+        let foundPlistPaths = try findDefaultPlistPaths()
+        
+        print("\nSelect the Info.plist files you want to update by entering their numbers (comma-separated for multiple):")
+        for (index, path) in foundPlistPaths.enumerated() {
+            print("[\(index)] \(path)")
+        }
+        
+        guard let userInput = readLine() else {
+            print("\u{001B}[31mInvalid selection.\u{001B}[0m")
+            throw ExitCode.failure
+        }
+
+        let selectedIndices = userInput.split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+        
+        for index in selectedIndices {
+            if index >= 0 && index < foundPlistPaths.count {
+                updateVersion(
+                    inFile: foundPlistPaths[index],
+                    major: major,
+                    minor: minor,
+                    hotfix: hotfix,
+                    build: build
+                )
+            } else {
+                print("\u{001B}[31mInvalid index: \(index). Skipping...\u{001B}[0m")
             }
         }
     }
     
-    
-    private func findDefaultPlistPath() throws -> String {
+    private func findDefaultPlistPaths() throws -> [String] {
+        var foundPlistPaths: [String] = []
+        
         if let projectPath = try? FileManager.default.contentsOfDirectory(atPath: FileManager.default.currentDirectoryPath).first(where: { $0.hasSuffix(".xcodeproj") }) {
             print("🔍 \u{001B}[32m\(projectPath)\u{001B}[0m found")
             let xcodeProject = try XcodeProj(pathString: projectPath)
             
             for conf in xcodeProject.pbxproj.buildConfigurations where conf.buildSettings[Keys.infoPlistFile] != nil {
-                if let plistPath = conf.buildSettings[Keys.infoPlistFile] as? String {
+                if let plistPath = conf.buildSettings[Keys.infoPlistFile] as? String, !foundPlistPaths.contains(plistPath) {
+                    foundPlistPaths.append(plistPath)
                     print("🎉 \u{001B}[32m\(plistPath)\u{001B}[0m found")
-                    return plistPath
                 }
             }
         }
         
-        throw NSError(domain: "XcodeProjectBump", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to locate Info.plist in the current directory."])
+        if foundPlistPaths.isEmpty {
+            throw NSError(domain: "XcodeProjectBump", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to locate any Info.plist in the current directory."])
+        }
+        
+        return foundPlistPaths
     }
     
     private func findAllPlistPaths() throws -> [String] {
